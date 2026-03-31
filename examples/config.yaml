@@ -1,0 +1,35 @@
+# Example hushterm configuration
+# Copy to ~/.config/hushterm/config.yaml
+
+# Toggle builtin patterns on/off by name.
+# Only patterns listed here are overridden; others keep their defaults.
+#
+# Available patterns:
+#   aws_access_key, private_key, jwt_token, github_token,
+#   generic_api_key, bearer_token, email, ssn, credit_card,
+#   phone_international, phone_us, ipv4
+patterns:
+  credit_card: false          # disabled by default (false positives without Luhn)
+  phone_us: true
+  phone_international: true
+
+# Redaction style: mask | placeholder | hash
+# mask:        "secret" -> "******"
+# placeholder: "secret" -> "[REDACTED:LABEL]"
+# hash:        "secret" -> "[REDACTED:LABEL]" (hash impl planned)
+# style: placeholder
+
+# Custom regex patterns — add your own without editing source code.
+custom:
+  - name: anthropic_key
+    pattern: 'sk-ant-[a-zA-Z0-9_-]{20,}'
+    label: ANTHROPIC_KEY
+
+  - name: openai_key
+    pattern: 'sk-proj-[a-zA-Z0-9_-]{20,}'
+    label: OPENAI_KEY
+
+  # - name: internal_url
+  #   pattern: 'https://internal\.mycompany\.com/[^\s]+'
+  #   label: INTERNAL_URL
+  #   enabled: false

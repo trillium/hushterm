@@ -1,0 +1,13 @@
+# Example blocklist file
+# Place in ~/.config/hushterm/blocklists/
+
+version: 1
+source: sample                    # identifies this file in log messages
+case_sensitive: false             # "Jane Doe" matches "jane doe", "JANE DOE", etc.
+entries:
+  - value: "Jane Doe"
+    label: "CLIENT_NAME"
+  - value: "5551234567"
+    label: "CLIENT_PHONE"
+  - value: "742 Evergreen Terrace"
+    label: "CLIENT_ADDRESS"
