@@ -1,4 +1,4 @@
-.PHONY: build test lint install clean release-snapshot
+.PHONY: build test lint install clean release-snapshot setup
 
 build:
 	go build -o hushterm .
@@ -17,3 +17,6 @@ clean:
 
 release-snapshot:
 	goreleaser release --snapshot --clean
+
+setup:
+	git config core.hooksPath .githooks

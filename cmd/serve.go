@@ -12,7 +12,7 @@ var serveCmd = &cobra.Command{
 	Long:  "Expose an HTTP endpoint for programmatic text redaction.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		port, _ := cmd.Flags().GetInt("port")
-		fmt.Fprintf(cmd.OutOrStderr(), "hushterm serve: not yet implemented (port %d)\n", port)
+		_, _ = fmt.Fprintf(cmd.OutOrStderr(), "hushterm serve: not yet implemented (port %d)\n", port)
 		return nil
 	},
 }
