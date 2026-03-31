@@ -107,6 +107,131 @@ output:
   # hash:        "AKIAIOSFODNN7EXAMPLE" → "[REDACTED:a1b2c3]"
 ```
 
+### Blocklist Redaction (Literal String Matching)
+
+In addition to regex patterns, hushterm supports **blocklist files** — YAML files containing known sensitive strings (client names, addresses, phone numbers) that are matched literally against terminal output using [Aho-Corasick](https://en.wikipedia.org/wiki/Aho%E2%80%93Corasick_algorithm) multi-pattern matching.
+
+This is designed for cases where regex can't help — you **know** the sensitive values (e.g., exported from a database) and want exact-match redaction.
+
+#### Usage
+
+```bash
+hushterm --blocklist-dir ~/.config/hushterm/blocklists -- claude
+```
+
+#### Directory Structure
+
+The `--blocklist-dir` flag points to a directory. All `.yaml` / `.yml` files in that directory are loaded and merged into a single matcher. Each file typically represents a different data source:
+
+```
+~/.config/hushterm/blocklists/
+├── massage_tracker.yaml        # exported from client DB
+├── massage_booking_app.yaml    # exported from booking system
+├── barter_system.yaml          # exported from barter network
+└── personal.yaml               # manually maintained
+```
+
+Both the directory and individual files can be **symlinks** — hushterm resolves them and watches the real targets for changes.
+
+```bash
+# Symlink a blocklist from another project
+ln -s ~/code/massage-tracker/redactions.yaml ~/.config/hushterm/blocklists/massage_tracker.yaml
+```
+
+#### File Format
+
+```yaml
+# Each file is independent and self-contained
+version: 1
+source: massage_tracker           # optional — identifies the data source in logs
+case_sensitive: false             # default: false (case-insensitive matching)
+entries:
+  - value: "Jane Doe"            # exact string to match
+    label: "CLIENT_NAME"         # appears in [REDACTED:CLIENT_NAME]
+  - value: "13105551234"
+    label: "CLIENT_PHONE"
+  - value: "742 Evergreen Terrace"
+    label: "CLIENT_ADDRESS"
+  - value: "jane.doe"            # catch partial matches (e.g., in usernames)
+    label: "CLIENT_ALIAS"
+```
+
+**Fields:**
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `version` | no | — | Schema version (currently `1`) |
+| `source` | no | — | Human-readable source name, used in log messages |
+| `case_sensitive` | no | `false` | When `false`, "Jane Doe" matches "jane doe", "JANE DOE", etc. |
+| `entries[].value` | **yes** | — | The literal string to match. Must be non-empty. |
+| `entries[].label` | **yes** | — | The redaction label. Appears as `[REDACTED:<label>]` in output. |
+
+**Common labels by convention:**
+
+| Label | Use for |
+|-------|---------|
+| `CLIENT_NAME` | Full names |
+| `CLIENT_PHONE` | Phone numbers (any format) |
+| `CLIENT_ADDRESS` | Street addresses |
+| `CLIENT_EMAIL` | Email addresses (supplements regex pattern) |
+| `CONTACT_NAME` | Non-client contacts |
+| `BUSINESS_NAME` | Business names that shouldn't be visible |
+
+Labels are freeform strings — use whatever makes sense for your data.
+
+#### How It Works
+
+1. At startup, all `.yaml`/`.yml` files in `--blocklist-dir` are read and parsed
+2. All entries across all files are compiled into a single **Aho-Corasick automaton** — a state machine that matches all patterns in a single pass over the input
+3. On every PTY output chunk, the blocklist runs **before** regex patterns
+4. Matched strings are replaced with `[REDACTED:<label>]`
+5. When overlapping entries match (e.g., "Jane" and "Jane Doe" both in the list), the **longest match wins**
+
+#### Live Reload
+
+The directory is watched with `fsnotify`. Changes take effect **without restarting hushterm**:
+
+- **Edit a file** → entries are reloaded within ~100ms
+- **Add a new file** → its entries are immediately available
+- **Delete a file** → its entries are removed from the matcher
+- **Modify a symlink target** → change is detected and reloaded
+
+If a file contains invalid YAML on reload, hushterm logs a warning and **keeps the previous working blocklist** — it never drops protection due to a parse error.
+
+#### Performance
+
+The Aho-Corasick algorithm matches **all** blocklist entries in a single pass over each output chunk — O(chunk_size), independent of the number of entries. Adding 10,000 entries costs the same per-chunk time as adding 10.
+
+| Entries | Per-chunk latency | Automaton rebuild |
+|---------|-------------------|-------------------|
+| 100 | ~0.01ms | <1ms |
+| 1,000 | ~0.01ms | ~2ms |
+| 10,000 | ~0.01ms | ~10ms |
+
+Rebuilds happen off the hot path in the watcher goroutine. The PTY loop swaps in the new matcher atomically with zero lock contention.
+
+#### Generating Blocklist Files
+
+Export scripts should produce the YAML format above. Example patterns:
+
+```bash
+# From a PostgreSQL database
+psql -c "SELECT json_build_object('value', name, 'label', 'CLIENT_NAME') FROM clients" \
+  | jq -s '{version: 1, source: "client_db", case_sensitive: false, entries: .}' \
+  | yq -P > ~/.config/hushterm/blocklists/clients.yaml
+
+# From a CSV
+awk -F',' '{print "  - value: \""$1"\"\n    label: \"CLIENT_NAME\""}' clients.csv \
+  | cat <(echo -e "version: 1\nsource: csv_export\ncase_sensitive: false\nentries:") - \
+  > ~/.config/hushterm/blocklists/clients.yaml
+```
+
+#### Limitations
+
+- **Unknown values are not caught** — only entries explicitly listed in blocklist files are matched. New clients/contacts must be added to the blocklist (or caught by regex patterns for structured formats like emails/phones).
+- **Cross-chunk boundary splits** — a name split across two 4096-byte PTY read boundaries may not be matched. This is rare in practice and will be addressed with an overlap buffer in a future release.
+- **ANSI escape sequences** — if an escape code is inserted mid-word (e.g., `Ja\033[0mne`), the literal match will miss. This is uncommon in normal terminal output.
+
 ### Key Technical Challenges
 
 1. **Cross-chunk matching** — ANSI escape sequences and streaming can split secrets across PTY read chunks. Need a sliding buffer (few hundred bytes) to ensure pattern matching works across boundaries.
