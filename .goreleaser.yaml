@@ -8,7 +8,7 @@ builds:
     goos:
       - linux
       - darwin
-      - windows
+      # Windows excluded: PTY (creack/pty) and SIGWINCH are Unix-only
     goarch:
       - amd64
       - arm64
@@ -19,9 +19,9 @@ archives:
   - format: tar.gz
     name_template: >-
       {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
-    format_overrides:
-      - goos: windows
-        format: zip
+    # format_overrides:
+    #   - goos: windows
+    #     format: zip
 
 checksum:
   name_template: "checksums.txt"
