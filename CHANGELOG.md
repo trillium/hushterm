@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-03-31
+
 ### Added
 - PTY-based command wrapping with real-time redaction
 - Pipe mode for non-interactive commands
@@ -19,4 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config file for toggling builtin patterns on/off
 - Custom regex patterns via config YAML
 - Three redaction styles: mask, placeholder, hash
+- Width-preserving redaction (`preserve_width` config option)
+- Customizable filler characters for mask style
 - `--config`, `--blocklist-dir`, and `--style` CLI flags
+- Build-time version injection via ldflags

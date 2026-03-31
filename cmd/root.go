@@ -35,10 +35,21 @@ func init() {
 	rootCmd.AddCommand(versionCmd)
 }
 
+var appVersion = "dev"
+var appCommit = "none"
+var appDate = "unknown"
+
+// SetVersion is called from main to inject build-time version info.
+func SetVersion(version, commit, date string) {
+	appVersion = version
+	appCommit = commit
+	appDate = date
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("hushterm v0.1.0-dev")
+		fmt.Printf("hushterm %s (commit: %s, built: %s)\n", appVersion, appCommit, appDate)
 	},
 }
