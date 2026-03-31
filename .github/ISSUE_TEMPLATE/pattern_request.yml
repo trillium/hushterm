@@ -1,0 +1,55 @@
+name: Pattern Request
+description: Request a new redaction pattern for hushterm
+labels: [pattern]
+body:
+  - type: textarea
+    id: what_to_detect
+    attributes:
+      label: What should be detected?
+      description: Describe the type of sensitive data this pattern should match (e.g., Stripe API keys, SSH private keys, specific token formats).
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples_match
+    attributes:
+      label: Example strings that SHOULD match
+      description: |
+        Provide realistic examples that this pattern should redact. Use fake/revoked values only.
+      placeholder: |
+        sk_live_abc123def456...
+        sk_test_xyz789...
+    validations:
+      required: true
+
+  - type: textarea
+    id: examples_no_match
+    attributes:
+      label: Example strings that should NOT match
+      description: |
+        Provide examples of similar-looking strings that should pass through unredacted.
+      placeholder: |
+        sk_live_ (prefix alone, no key)
+        skeleton_lives_matter (false positive)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: false_positive_risk
+    attributes:
+      label: False positive risk
+      description: How likely is this pattern to accidentally redact non-sensitive text?
+      options:
+        - Low - very distinctive format (e.g., AWS key prefix + fixed length)
+        - Medium - somewhat distinctive but could overlap with normal text
+        - High - broad pattern that needs careful tuning
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      description: Links to documentation, format specifications, or anything else that helps define the pattern.
+    validations:
+      required: false
