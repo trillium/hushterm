@@ -28,7 +28,7 @@ func WatchBlocklistDir(dir string, holder *BlocklistHolder) (func(), error) {
 
 	// Watch the directory itself.
 	if err := watcher.Add(resolved); err != nil {
-		watcher.Close()
+		_ = watcher.Close()
 		return nil, fmt.Errorf("watch dir: %w", err)
 	}
 
@@ -75,7 +75,7 @@ func WatchBlocklistDir(dir string, holder *BlocklistHolder) (func(), error) {
 
 	stop := func() {
 		close(done)
-		watcher.Close()
+		_ = watcher.Close()
 	}
 	return stop, nil
 }
@@ -102,7 +102,7 @@ func watchSymlinkTargets(watcher *fsnotify.Watcher, dir string) {
 		if realPath != fullPath {
 			targetDir := filepath.Dir(realPath)
 			// Ignore errors — may already be watched.
-			watcher.Add(targetDir)
+			_ = watcher.Add(targetDir)
 		}
 	}
 }

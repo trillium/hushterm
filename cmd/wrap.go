@@ -62,7 +62,7 @@ func runPTY(args []string, engine *redact.Engine) error {
 	if err != nil {
 		return fmt.Errorf("start pty: %w", err)
 	}
-	defer ptmx.Close()
+	defer func() { _ = ptmx.Close() }()
 
 	// Handle terminal resize.
 	ch := make(chan os.Signal, 1)
@@ -82,7 +82,7 @@ func runPTY(args []string, engine *redact.Engine) error {
 	if err != nil {
 		return fmt.Errorf("set raw mode: %w", err)
 	}
-	defer term.Restore(int(os.Stdin.Fd()), oldState)
+	defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }()
 
 	// Proxy stdin → pty (user input).
 	go func() {
@@ -90,7 +90,7 @@ func runPTY(args []string, engine *redact.Engine) error {
 		for {
 			n, err := os.Stdin.Read(buf)
 			if n > 0 {
-				ptmx.Write(buf[:n])
+				_, _ = ptmx.Write(buf[:n])
 			}
 			if err != nil {
 				return
@@ -104,7 +104,7 @@ func runPTY(args []string, engine *redact.Engine) error {
 		n, err := ptmx.Read(buf)
 		if n > 0 {
 			redacted := engine.Redact(buf[:n])
-			os.Stdout.Write(redacted)
+			_, _ = os.Stdout.Write(redacted)
 		}
 		if err != nil {
 			break
@@ -141,7 +141,7 @@ func runPipe(args []string, engine *redact.Engine) error {
 			n, err := src.Read(buf)
 			if n > 0 {
 				redacted := engine.Redact(buf[:n])
-				dst.Write(redacted)
+				_, _ = dst.Write(redacted)
 			}
 			if err != nil {
 				return
