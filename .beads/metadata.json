@@ -1,0 +1,9 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_server_host": "mini2.local",
+  "dolt_server_port": 3307,
+  "dolt_database": "HT",
+  "project_id": "8bdf3c56-aaa7-44c3-826d-91fbd7f3d53a"
+}
