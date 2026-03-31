@@ -1,4 +1,4 @@
-# redact — PTY-based real-time redaction wrapper
+# hushterm — PTY-based real-time redaction wrapper
 
 ## The Problem
 
@@ -29,13 +29,21 @@ Nobody has built a PTY-based redaction wrapper. The closest things:
 
 ## The Solution
 
-A Go binary that wraps any CLI command in a PTY, intercepts output, and redacts sensitive content in real-time before it reaches the terminal.
+A Go binary that wraps any CLI command in a PTY, intercepts output, and redacts sensitive content in real-time before it reaches the terminal. Works with any TUI — not just AI agents.
+
+```bash
+hushterm -- claude            # AI coding assistants
+hushterm -- ssh prod-server   # SSH sessions
+hushterm -- docker logs -f    # Container logs
+hushterm -- kubectl logs      # K8s logs
+hushterm -- mysql             # Database CLIs
+```
 
 ### Architecture
 
 ```
 ┌──────────┐     ┌─────────┐     ┌──────────┐
-│ claude   │────▶│  PTY    │────▶│ redact   │────▶ your terminal
+│ claude   │────▶│  PTY    │────▶│ hushterm │────▶ your terminal
 │ (thinks  │     │ (fake   │     │ (pattern │     (clean output)
 │  it's a  │     │  term)  │     │  match + │
 │  real    │     │         │     │  buffer) │
@@ -55,19 +63,19 @@ A Go binary that wraps any CLI command in a PTY, intercepts output, and redacts 
 
 ```bash
 # Wrap a command
-redact -- claude
+hushterm -- claude
 
 # Pipe mode (non-TUI only)
-some-command 2>&1 | redact
+some-command 2>&1 | hushterm
 
 # Server mode (for apps like Happy to call via HTTP)
-redact serve --port 8080
+hushterm serve --port 8080
 ```
 
 ### Config-driven pattern management
 
 ```yaml
-# ~/.config/redact/config.yaml
+# ~/.config/hushterm/config.yaml
 builtin:
   secrets:
     aws_keys: true
@@ -166,7 +174,7 @@ Battle-tested regex databases to draw from:
 ### Relationship to Happy
 
 This is a standalone open source project, NOT coupled to Happy. However, Happy could use it in two ways:
-1. **Server mode** — Happy's backend calls `redact serve` to filter agent output before sending to the mobile app
+1. **Server mode** — Happy's backend calls `hushterm serve` to filter agent output before sending to the mobile app
 2. **Embedded patterns** — Happy extracts the pattern database and runs matching in its own reducer pipeline (JS/TS port of just the patterns)
 
 ## Prior Art & References
