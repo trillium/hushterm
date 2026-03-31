@@ -22,6 +22,15 @@ func runWrap(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("init redaction engine: %w", err)
 	}
 
+	// Load config file if provided.
+	if cfgFile != "" {
+		cfg, err := redact.LoadConfig(cfgFile)
+		if err != nil {
+			return fmt.Errorf("load config: %w", err)
+		}
+		engine.ApplyConfig(cfg)
+	}
+
 	// Load blocklist directory if provided.
 	if blocklistDir != "" {
 		bl, err := redact.LoadBlocklistDir(blocklistDir)
