@@ -18,9 +18,11 @@ type CustomPattern struct {
 
 // Config is the top-level hushterm configuration file.
 type Config struct {
-	Patterns map[string]bool `yaml:"patterns"` // pattern name → enabled/disabled
-	Custom   []CustomPattern `yaml:"custom"`
-	Style    string          `yaml:"style"` // mask, placeholder, hash
+	Patterns      map[string]bool `yaml:"patterns"`       // pattern name → enabled/disabled
+	Custom        []CustomPattern `yaml:"custom"`
+	Style         string          `yaml:"style"`          // mask, placeholder, hash
+	PreserveWidth bool            `yaml:"preserve_width"` // match replacement width to original
+	Filler        string          `yaml:"filler"`         // filler character(s) for mask style
 }
 
 // LoadConfig reads a hushterm config YAML file.
@@ -47,6 +49,11 @@ func (e *Engine) ApplyConfig(cfg *Config) {
 	if cfg.Style != "" {
 		e.style = Style(cfg.Style)
 	}
+	if cfg.Filler != "" {
+		e.filler = cfg.Filler
+	}
+	e.preserveWidth = cfg.PreserveWidth
+
 	for i := range e.patterns {
 		if enabled, ok := cfg.Patterns[e.patterns[i].Name]; ok {
 			e.patterns[i].Enabled = enabled

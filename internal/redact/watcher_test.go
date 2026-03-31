@@ -44,7 +44,7 @@ entries:
 		if bl == nil {
 			return false
 		}
-		out := string(bl.ReplaceAll([]byte("has created-secret here"), StylePlaceholder))
+		out := string(bl.ReplaceAll([]byte("has created-secret here"), testPlaceholderReplacer))
 		return out == "has [REDACTED:CREATED] here"
 	})
 	if !ok {
@@ -90,7 +90,7 @@ entries:
 		if bl == nil {
 			return false
 		}
-		out := string(bl.ReplaceAll([]byte("has modified-value here"), StylePlaceholder))
+		out := string(bl.ReplaceAll([]byte("has modified-value here"), testPlaceholderReplacer))
 		return out == "has [REDACTED:MODIFIED] here"
 	})
 	if !ok {
@@ -190,7 +190,7 @@ entries:
 		if bl == nil {
 			return false
 		}
-		out := string(bl.ReplaceAll([]byte("has recovered-secret here"), StylePlaceholder))
+		out := string(bl.ReplaceAll([]byte("has recovered-secret here"), testPlaceholderReplacer))
 		return out == "has [REDACTED:RECOVERED] here"
 	})
 	if !ok {

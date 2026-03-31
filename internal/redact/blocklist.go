@@ -71,8 +71,8 @@ type match struct {
 	label string
 }
 
-// ReplaceAll finds all blocklist matches and replaces them with redaction placeholders.
-func (bl *Blocklist) ReplaceAll(data []byte, style Style) []byte {
+// ReplaceAll finds all blocklist matches and replaces them using the provided replacement function.
+func (bl *Blocklist) ReplaceAll(data []byte, replaceFn func(label string, match []byte) []byte) []byte {
 	if bl == nil {
 		return data
 	}
@@ -123,9 +123,8 @@ func (bl *Blocklist) ReplaceAll(data []byte, style Style) []byte {
 	prev := 0
 	for _, m := range filtered {
 		buf.Write(data[prev:m.start])
-		buf.WriteString("[REDACTED:")
-		buf.WriteString(m.label)
-		buf.WriteByte(']')
+		replacement := replaceFn(m.label, data[m.start:m.end])
+		buf.Write(replacement)
 		prev = m.end
 	}
 	buf.Write(data[prev:])

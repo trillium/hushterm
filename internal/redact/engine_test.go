@@ -195,3 +195,99 @@ func TestRedact_NoMatches(t *testing.T) {
 		t.Errorf("expected unchanged output, got %q", out)
 	}
 }
+
+func TestRedact_StyleMask_WithFiller(t *testing.T) {
+	e, err := NewEngine(StyleMask)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.filler = "🤫"
+	out := string(e.Redact([]byte("email: user@example.com")))
+	// Should replace email with 🤫 repeated to match display width
+	if !strings.Contains(out, "email: ") {
+		t.Errorf("email label should be preserved, got %q", out)
+	}
+	if strings.Contains(out, "user@example.com") {
+		t.Errorf("email should be redacted, got %q", out)
+	}
+	if !strings.Contains(out, "🤫") {
+		t.Errorf("filler 🤫 should appear in output, got %q", out)
+	}
+}
+
+func TestRedact_StylePlaceholder_PreserveWidth(t *testing.T) {
+	e, err := NewEngine(StylePlaceholder)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.preserveWidth = true
+	out := string(e.Redact([]byte("email: user@example.com")))
+	// [REDACTED:EMAIL] is 15 chars, user@example.com is 15 chars, should match exactly
+	if !strings.Contains(out, "email: ") {
+		t.Errorf("email label should be preserved, got %q", out)
+	}
+	if strings.Contains(out, "user@example.com") {
+		t.Errorf("email should be redacted, got %q", out)
+	}
+	if !strings.Contains(out, "[REDACTED:EMAIL]") {
+		t.Errorf("placeholder should appear, got %q", out)
+	}
+}
+
+func TestFitToWidth_Shorter(t *testing.T) {
+	e, _ := NewEngine(StylePlaceholder)
+	result := e.fitToWidth("hi", 5)
+	if len(result) != 5 {
+		t.Errorf("fitToWidth should pad to 5 chars, got %q (len %d)", result, len(result))
+	}
+}
+
+func TestFitToWidth_Longer(t *testing.T) {
+	e, _ := NewEngine(StylePlaceholder)
+	result := e.fitToWidth("verylongword", 5)
+	if len([]rune(result)) > 5 {
+		t.Errorf("fitToWidth should truncate to max 5 runes, got %q", result)
+	}
+	if !strings.Contains(result, "…") {
+		t.Errorf("fitToWidth should add ellipsis when truncating, got %q", result)
+	}
+}
+
+func TestRepeatToWidth_Basic(t *testing.T) {
+	e, _ := NewEngine(StyleMask)
+	result := e.repeatToWidth("*", 5)
+	if result != "*****" {
+		t.Errorf("repeatToWidth should produce 5 asterisks, got %q", result)
+	}
+}
+
+func TestRepeatToWidth_MultiChar(t *testing.T) {
+	e, _ := NewEngine(StyleMask)
+	result := e.repeatToWidth("🤫", 3)
+	// 🤫 has display width 2, so 3 width = 1.5 reps, should round up to 2 reps then trim
+	if !strings.Contains(result, "🤫") {
+		t.Errorf("repeatToWidth should contain filler, got %q", result)
+	}
+}
+
+func TestApplyConfig_Filler(t *testing.T) {
+	e, _ := NewEngine(StyleMask)
+	cfg := &Config{
+		Filler: "#",
+	}
+	e.ApplyConfig(cfg)
+	if e.filler != "#" {
+		t.Errorf("ApplyConfig should set filler to #, got %q", e.filler)
+	}
+}
+
+func TestApplyConfig_PreserveWidth(t *testing.T) {
+	e, _ := NewEngine(StylePlaceholder)
+	cfg := &Config{
+		PreserveWidth: true,
+	}
+	e.ApplyConfig(cfg)
+	if !e.preserveWidth {
+		t.Error("ApplyConfig should set preserveWidth to true")
+	}
+}
