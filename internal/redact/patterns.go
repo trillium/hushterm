@@ -64,8 +64,14 @@ func builtinPatterns() []Pattern {
 			Enabled: false, // Too many false positives without Luhn — disabled until ht-q6x.7.
 		},
 		{
+			Name:    "phone_international",
+			Regex:   regexp.MustCompile(`\+[1-9][0-9]{6,14}`),
+			Label:   "PHONE",
+			Enabled: true,
+		},
+		{
 			Name:    "phone_us",
-			Regex:   regexp.MustCompile(`\b(?:\+1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b`),
+			Regex:   regexp.MustCompile(`\+?1?[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}`),
 			Label:   "PHONE",
 			Enabled: true,
 		},
